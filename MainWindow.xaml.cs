@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using MdXaml;
 
@@ -53,6 +54,14 @@ namespace LocalAIChatWPF
             var handle = new System.Windows.Interop.WindowInteropHelper(this).EnsureHandle();
             var dark = 1;
             DwmSetWindowAttribute(handle, 20, ref dark, sizeof(int));
+
+            Timeline.DesiredFrameRateProperty.OverrideMetadata(
+        typeof(Timeline),
+        new FrameworkPropertyMetadata { DefaultValue = 30 }
+    );
+
+            Directory.CreateDirectory(ConfigDir);
+            LoadConfig();
 
             Directory.CreateDirectory(ConfigDir);
             LoadConfig();
@@ -135,20 +144,25 @@ namespace LocalAIChatWPF
                 FontSize = _fontSize,
                 Margin = new Thickness(0, 10, 0, 2)
             };
-            var textBlock = new TextBlock
+            var textBox = new TextBox
             {
                 Text = text,
                 Foreground = new SolidColorBrush(Color.FromRgb(232, 232, 234)),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
                 FontSize = _fontSize,
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 4)
+                IsReadOnly = true,
+                Cursor = Cursors.IBeam,
+                Margin = new Thickness(0, 0, 0, 4),
+                Padding = new Thickness(0)
             };
             ChatPanel.Children.Add(nameBlock);
-            ChatPanel.Children.Add(textBlock);
+            ChatPanel.Children.Add(textBox);
             ScrollToBottom();
         }
 
-        private TextBlock AddAiBubble()
+        private TextBox AddAiBubble()
         {
             var nameBlock = new TextBlock
             {
@@ -158,37 +172,46 @@ namespace LocalAIChatWPF
                 FontSize = _fontSize,
                 Margin = new Thickness(0, 10, 0, 2)
             };
-            var responseBlock = new TextBlock
+            var textBox = new TextBox
             {
                 Foreground = new SolidColorBrush(Color.FromRgb(232, 232, 234)),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
                 FontSize = _fontSize,
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 2, 0, 4)
+                IsReadOnly = true,
+                Cursor = Cursors.IBeam,
+                Margin = new Thickness(0, 2, 0, 4),
+                Padding = new Thickness(0)
             };
             ChatPanel.Children.Add(nameBlock);
-            ChatPanel.Children.Add(responseBlock);
+            ChatPanel.Children.Add(textBox);
             ScrollToBottom();
-            return responseBlock;
+            return textBox;
         }
 
         private void AddThinkingIndicator()
         {
-            var block = new TextBlock
+            var box = new TextBox
             {
                 Text = "Thinking...",
                 Foreground = new SolidColorBrush(Color.FromRgb(46, 204, 113)),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
                 FontStyle = FontStyles.Italic,
                 FontSize = _fontSize,
+                IsReadOnly = true,
                 Tag = "thinking",
-                Margin = new Thickness(0, 2, 0, 4)
+                Margin = new Thickness(0, 2, 0, 4),
+                Padding = new Thickness(0)
             };
-            ChatPanel.Children.Add(block);
+            ChatPanel.Children.Add(box);
             ScrollToBottom();
         }
 
         private void RemoveThinkingIndicator()
         {
-            var thinking = ChatPanel.Children.OfType<TextBlock>()
+            var thinking = ChatPanel.Children.OfType<TextBox>()
                 .FirstOrDefault(b => b.Tag as string == "thinking");
             if (thinking != null)
                 ChatPanel.Children.Remove(thinking);
@@ -594,9 +617,11 @@ namespace LocalAIChatWPF
         {
             foreach (var child in ChatPanel.Children.OfType<TextBlock>())
                 child.FontSize = _fontSize;
+            foreach (var child in ChatPanel.Children.OfType<TextBox>())
+                if (child != InputBox)
+                    child.FontSize = _fontSize;
             InputBox.FontSize = _fontSize;
         }
-
         // ================================================================
         // Settings
         // ================================================================
